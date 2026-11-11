@@ -1,20 +1,26 @@
-import type { RouteRecordRaw } from "vue-router";
-
-const routes: RouteRecordRaw[] = [
+const routes = [
   {
-    path: "/",
-    component: () => import("@/layouts/MainLayout.vue"),
-    children: [
-      { path: "", component: () => import("@/pages/IndexPage.vue") },
-      { path: "second", component: () => import("@/pages/SecondPage.vue") }
-    ]
+    path: '/',
+    // Redirige automáticamente al login cuando abres la app
+    redirect: '/login' 
+  },
+  {
+    path: '/login',
+    component: () => import('pages/LoginPage.vue') // Tu vista de login que creamos
+  },
+  {
+    path: '/register',
+    component: () => import('pages/RegisterPage.vue') // Tu vista de registro que creamos
+  },
+  {
+    path: '/dashboard',
+    component: () => import('pages/DashboardPage.vue') // Tu panel principal
   },
 
-  // Always leave this as last one,
-  // but you can also remove it
+  // Siempre es bueno dejar una ruta comodín por si escriben mal una URL
   {
-    path: "/:catchAll(.*)*",
-    component: () => import("@/pages/ErrorNotFound.vue")
+    path: '/:catchAll(.*)*',
+    component: () => import('pages/ErrorNotFound.vue')
   }
 ];
 
