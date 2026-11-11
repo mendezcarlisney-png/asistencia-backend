@@ -15,6 +15,6 @@ export class CreateUserDto {
   password: string;
 
   @IsOptional()
-  @IsEnum(['estudiante', 'profesor', 'admin'], { message: 'Rol no válido' })
+  @IsEnum(['ESTUDIANTE', 'PROFESOR', 'ADMIN'], { message: 'Rol no válido' })
   rol?: string;
 }

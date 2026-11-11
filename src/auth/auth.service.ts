@@ -39,8 +39,15 @@ export class AuthService {
         message: 'Usuario registrado exitosamente',
         user: result,
       };
-    } catch (error) {
-      throw new ConflictException('El correo electrónico ya se encuentra registrado.');
+    } catch (error: any) {
+      // Verificamos de forma segura si el error tiene la propiedad code de PostgreSQL
+      if (error && error.code === '23505') {
+        throw new ConflictException('El correo electrónico ya se encuentra registrado.');
+      }
+      
+      // Si es otro tipo de error, lo imprimimos en consola y lo lanzamos para no enmascararlo
+      console.error('❌ Error desconocido en registro:', error);
+      throw error;
     }
   }
 }

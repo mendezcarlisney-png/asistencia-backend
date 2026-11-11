@@ -32,6 +32,9 @@ export class UsersService {
       return result as User;
 
     } catch (error: unknown) {
+      // 🚨 Imprimimos el error real en la consola de la terminal para depuración
+      console.error('🔥 ERROR REAL EN USERS SERVICE:', error);
+
       const err = error as { code?: string };
       if (err.code === '23505') {
         throw new ConflictException('El correo electrónico ya se encuentra registrado.');
