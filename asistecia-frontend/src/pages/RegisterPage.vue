@@ -74,7 +74,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
-import api from 'src/services/api';
+import api from '../services/api';
 
 const router = useRouter();
 const $q = useQuasar();
