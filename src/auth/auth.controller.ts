@@ -24,7 +24,6 @@ export class AuthController {
     return this.authService.login(user);
   }
 
-  // --- RUTA PRIVADA PROTEGIDA CON JWT ---
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   getProfile(@Req() req: any) {

@@ -12,6 +12,10 @@ const routes = [
     component: () => import('../pages/RegisterPage.vue')
   },
   {
+    path: '/dashboard',
+    component: () => import('../pages/DashboardPage.vue')
+  },
+  {
     path: '/:catchAll(.*)*',
     component: () => import('../pages/ErrorNotFound.vue')
   }

@@ -50,11 +50,10 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useQuasar } from 'quasar';
+import { Notify } from 'quasar';
 import api from '../services/api';
 
 const router = useRouter();
-const $q = useQuasar();
 
 const form = ref({
   email: '',
@@ -68,7 +67,8 @@ const handleLogin = async () => {
     localStorage.setItem('token', response.data.access_token);
     localStorage.setItem('user', JSON.stringify(response.data.user));
 
-    $q.notify({
+    // Notificación de éxito al iniciar sesión correctamente
+    Notify.create({
       color: 'positive',
       message: '¡Bienvenido de nuevo!',
       icon: 'login'
@@ -77,7 +77,9 @@ const handleLogin = async () => {
     router.push('/dashboard');
   } catch (error) {
     const errorMsg = error.response?.data?.message || 'Credenciales incorrectas';
-    $q.notify({
+    
+    // Notificación de error si falla la autenticación
+    Notify.create({
       color: 'negative',
       message: Array.isArray(errorMsg) ? errorMsg[0] : errorMsg,
       icon: 'report_problem'
