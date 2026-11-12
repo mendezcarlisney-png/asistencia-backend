@@ -31,7 +31,7 @@
             </q-card>
           </div>
 
-          <!-- Sección dinámica según el Rol -->
+        <!-- Sección dinámica según el Rol -->
           <div class="col-12 col-md-4" v-if="user?.rol === 'ADMIN'">
             <q-card class="q-pa-md bg-blue-1">
               <div class="text-h6 text-blue-9">Panel de Administrador</div>
@@ -43,6 +43,16 @@
             <q-card class="q-pa-md bg-green-1">
               <div class="text-h6 text-green-9">Panel de Profesor</div>
               <p class="text-grey-8">Creación de clases y pase de lista a los estudiantes.</p>
+              
+              <!-- Botón para ir al control de asistencia (CORRECTO AQUÍ) -->
+              <q-btn 
+                color="positive" 
+                icon="how_to_reg" 
+                label="Pasar Lista" 
+                to="/profesor/asistencia" 
+                class="q-mt-sm full-width" 
+                unelevated 
+              />
             </q-card>
           </div>
 
