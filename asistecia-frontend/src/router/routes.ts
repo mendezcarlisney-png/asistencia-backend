@@ -16,6 +16,10 @@ const routes = [
   component: () => import('../pages/ProfesorAsistenciaPage.vue')
   },
   {
+  path: '/estudiante/asistencia',
+  component: () => import('../pages/MisAsistenciaPage.vue'), // 👈 Quita la "s" de MisAsistencias
+},
+  {
     path: '/dashboard',
     component: () => import('../pages/DashboardPage.vue')
   },
