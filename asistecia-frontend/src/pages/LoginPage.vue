@@ -124,7 +124,7 @@ const handleLogin = async () => {
 
     // Redirección inteligente de acuerdo al rol del sistema
     if (userRole === 'PROFESOR') {
-      router.push('/profesor/materias');
+      router.push('/materias');
     } else if (userRole === 'ESTUDIANTE') {
       router.push('/estudiante/asistencia');
     } else if (userRole === 'ADMIN') {
