@@ -247,11 +247,7 @@ const opcionesFiltroMaterias = computed(() => {
   return [{ nombre: 'Todas las materias' }, ...materiasDocente.value];
 });
 
-const horarioDocente = ref([
-  { id: 1, dia: 'Lunes', hora: '07:00 AM - 09:15 AM', materia: 'Arquitectura de Software', aula: 'LAB-01', seccion: 'Sección 01' },
-  { id: 2, dia: 'Miércoles', hora: '07:00 AM - 09:15 AM', materia: 'Arquitectura de Software', aula: 'LAB-01', seccion: 'Sección 01' },
-  { id: 3, dia: 'Martes', hora: '09:30 AM - 11:45 AM', materia: 'Matemáticas Discretas', aula: 'Aula 101', seccion: 'Sección 02' }
-]);
+const horarioDocente = ref([]);
 
 const estudiantesAsignados = ref([
   { id: 1, nombre: 'Ana Sofía Pérez', email: 'ana.perez@universidad.edu', materia: 'Arquitectura de Software', seccion: 'Sección 01', qr: 'QR-EST-8842' },
@@ -316,12 +312,41 @@ const cargarDatosProfesor = async () => {
 };
 
 onMounted(() => {
-  cargarDatosProfesor();
+  cargarDatosProfesor().then(cargarHorarioDocente);
 });
 
 const logout = () => {
   localStorage.clear();
   router.push('/login');
+};
+const DIAS_LABEL = {
+  LUNES: 'Lunes', MARTES: 'Martes', MIERCOLES: 'Mi\u00e9rcoles',
+  JUEVES: 'Jueves', VIERNES: 'Viernes', SABADO: 'S\u00e1bado', DOMINGO: 'Domingo'
+};
+
+const hora12 = (hhmm) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return String(h12).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ' ' + (h >= 12 ? 'PM' : 'AM');
+};
+
+const cargarHorarioDocente = async () => {
+  try {
+    const res = await api.get('/horarios/mios');
+    const resumen = {};
+    horarioDocente.value = res.data.map((h) => {
+      const dia = DIAS_LABEL[h.dia] || h.dia;
+      const hora = hora12(h.horaInicio) + ' - ' + hora12(h.horaFin);
+      resumen[h.materiaId] = (resumen[h.materiaId] ? resumen[h.materiaId] + ' / ' : '') + dia.slice(0, 3) + ' ' + hora;
+      return { id: h.id, dia, hora, materia: h.materia?.nombre, aula: h.aula || '-', seccion: h.materia?.grupo || '-' };
+    });
+    materiasDocente.value = materiasDocente.value.map((m) => ({
+      ...m,
+      horario: resumen[m.id] || 'Sin horario asignado'
+    }));
+  } catch (error) {
+    console.error('No se pudo cargar el horario del profesor:', error);
+  }
 };
 </script>
 

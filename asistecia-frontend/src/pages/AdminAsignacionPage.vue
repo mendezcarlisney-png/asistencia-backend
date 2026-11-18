@@ -174,7 +174,7 @@
                       <div v-if="props.row[dia]" class="bg-blue-1 text-navy-dark q-pa-sm rounded-borders border-subtle">
                         <div class="text-weight-bold" style="font-size: 11px;">{{ props.row[dia].materia }}</div>
                         <div class="text-caption text-vinotinto text-weight-bold" style="font-size: 10px;">Prof. {{ props.row[dia].profesor }}</div>
-                        <div class="text-caption text-grey-8" style="font-size: 10px;">Aula: {{ props.row[dia].aula }} | {{ props.row[dia].semestre }}</div>
+                        <div class="text-caption text-grey-8" style="font-size: 10px;">Aula: {{ props.row[dia].aula }}</div>
                       </div>
                       <span v-else class="text-grey-4 text-caption">— Libre —</span>
                     </q-td>
@@ -340,14 +340,36 @@
         <q-card-section class="q-gutter-md">
           <q-select v-model="nuevoBloque.dia" :options="diasSemana" label="Día de la Semana" outlined dense class="bg-grey-1" />
           <q-select v-model="nuevoBloque.hora" :options="horasBloques" label="Bloque Horario" outlined dense class="bg-grey-1" />
-          <q-input v-model="nuevoBloque.materia" label="Nombre de la Materia" outlined dense class="bg-grey-1" />
-          <q-input v-model="nuevoBloque.profesor" label="Profesor Titular" outlined dense class="bg-grey-1" />
+          <q-select
+            v-model="nuevoBloque.profesorId"
+            :options="profesoresOptions"
+            option-value="id"
+            option-label="nombre"
+            emit-value
+            map-options
+            label="Profesor Titular"
+            outlined
+            dense
+            class="bg-grey-1"
+            @update:model-value="nuevoBloque.materiaId = null"
+          />
+          <q-select
+            v-model="nuevoBloque.materiaId"
+            :options="materiasDelProfesor"
+            option-value="id"
+            option-label="nombre"
+            emit-value
+            map-options
+            label="Materia del profesor"
+            outlined
+            dense
+            class="bg-grey-1"
+          />
           <q-input v-model="nuevoBloque.aula" label="Aula Asignada (Ej. LAB-01)" outlined dense class="bg-grey-1" />
-          <q-select v-model="nuevoBloque.semestre" :options="['2026-I', '2026-II']" label="Semestre / Período Académico" outlined dense class="bg-grey-1" />
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
           <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
-          <q-btn unelevated label="Guardar Asignación" color="vinotinto" @click="guardarBloque" class="text-weight-bold q-px-md" />
+          <q-btn unelevated label="Guardar Asignación" color="vinotinto" @click="guardarHorario" class="text-weight-bold q-px-md" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -438,8 +460,8 @@ const bloquesHorarios = ref([
 const nuevoBloque = ref({
   dia: 'Lunes',
   hora: '07:00 AM - 09:15 AM',
-  materia: '',
-  profesor: '',
+  materiaId: null,
+  profesorId: null,
   aula: '',
   semestre: '2026-I'
 });
@@ -559,6 +581,78 @@ const guardarBloque = () => {
 const logout = () => {
   localStorage.clear();
   router.push('/login');
+};
+const materiasDelProfesor = computed(() =>
+  materiasGlobales.value.filter((m) => m.profesorId === nuevoBloque.value.profesorId)
+);
+
+const to24 = (h, m, ap) => {
+  const hh = (parseInt(h, 10) % 12) + (ap.toUpperCase() === 'PM' ? 12 : 0);
+  return String(hh).padStart(2, '0') + ':' + m;
+};
+
+const parseBloque = (label) => {
+  const r = /(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(label || '');
+  if (!r) return null;
+  return { inicio: to24(r[1], r[2], r[3]), fin: to24(r[4], r[5], r[6]) };
+};
+
+const to12 = (hhmm) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return String(h12).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ' ' + (h >= 12 ? 'PM' : 'AM');
+};
+
+const construirMatriz = (lista) => {
+  const filas = {};
+  lista.forEach((h) => {
+    const et = to12(h.horaInicio) + ' - ' + to12(h.horaFin);
+    if (!filas[et]) {
+      filas[et] = { id: et, hora: et, inicio: h.horaInicio, lunes: null, martes: null, miercoles: null, jueves: null, viernes: null };
+    }
+    const key = h.dia.toLowerCase();
+    if (['lunes', 'martes', 'miercoles', 'jueves', 'viernes'].includes(key)) {
+      filas[et][key] = { materia: h.materia?.nombre, profesor: h.materia?.profesor?.nombre, aula: h.aula || '-' };
+    }
+  });
+  return Object.values(filas).sort((a, b) => a.inicio.localeCompare(b.inicio));
+};
+
+const cargarHorarios = async () => {
+  try {
+    const res = await api.get('/horarios');
+    bloquesHorarios.value = construirMatriz(res.data);
+  } catch (error) {
+    console.error('Error al cargar horarios:', error);
+  }
+};
+
+onMounted(cargarHorarios);
+
+const guardarHorario = async () => {
+  const b = nuevoBloque.value;
+  const t = parseBloque(b.hora);
+  if (!b.profesorId || !b.materiaId || !t) {
+    $q.notify({ color: 'negative', message: 'Seleccione profesor, materia y bloque horario', position: 'top' });
+    return;
+  }
+  try {
+    await api.post('/horarios', {
+      materiaId: b.materiaId,
+      dia: b.dia,
+      horaInicio: t.inicio,
+      horaFin: t.fin,
+      aula: b.aula || undefined
+    });
+    $q.notify({ color: 'navy-dark', textColor: 'white', message: 'Horario asignado con exito', icon: 'check_circle', position: 'top' });
+    dialogHorario.value = false;
+    nuevoBloque.value.materiaId = null;
+    nuevoBloque.value.aula = '';
+    await cargarHorarios();
+  } catch (error) {
+    const msg = error.response?.data?.message;
+    $q.notify({ color: 'negative', message: Array.isArray(msg) ? msg.join(', ') : (msg || 'Error al guardar el horario'), position: 'top' });
+  }
 };
 </script>
 
