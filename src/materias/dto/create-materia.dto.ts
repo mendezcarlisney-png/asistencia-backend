@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateMateriaDto {
   @IsString()
@@ -8,4 +8,8 @@ export class CreateMateriaDto {
   @IsOptional()
   @IsString()
   grupo?: string;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'profesorId debe ser un UUID valido' })
+  profesorId?: string;
 }

@@ -66,4 +66,23 @@ export class AsistenciasService {
       relations: { materia: true, detalles: { estudiante: true } },
     });
   }
+
+  async findMisAsistencias(estudianteId: string) {
+    const detalles = await this.detalleRepo
+      .createQueryBuilder('d')
+      .innerJoinAndSelect('d.sesion', 's')
+      .innerJoinAndSelect('s.materia', 'm')
+      .where('d.estudianteId = :estudianteId', { estudianteId })
+      .orderBy('s.fecha', 'DESC')
+      .getMany();
+
+    return detalles.map((d) => ({
+      id: d.id,
+      fecha: d.sesion.fecha,
+      claseVista: d.sesion.claseVista,
+      estado: d.estado,
+      materiaId: d.sesion.materiaId,
+      materia: d.sesion.materia?.nombre,
+    }));
+  }
 }

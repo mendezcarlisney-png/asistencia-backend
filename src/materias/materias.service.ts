@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import { Materia } from './entities/materia.entity.js';
 import { Inscripcion } from './entities/inscripcion.entity.js';
 import { User, UserRole } from '../users/entities/user.entity.js';
+import { AsistenciaSesion } from '../asistencias/entities/asistencia-sesion.entity.js';
 import { CreateMateriaDto } from './dto/create-materia.dto.js';
 import { InscribirEstudianteDto } from './dto/inscribir-estudiante.dto.js';
 
@@ -24,17 +25,45 @@ export class MateriasService {
     private readonly userRepo: Repository<User>,
   ) {}
 
-  async create(dto: CreateMateriaDto, profesorId: string): Promise<Materia> {
+  async create(dto: CreateMateriaDto, userId: string, rol: string): Promise<Materia> {
+    let profesorId = userId;
+
+    if (rol === UserRole.ADMIN) {
+      if (!dto.profesorId) {
+        throw new BadRequestException('Debes indicar el profesorId');
+      }
+      const profesor = await this.userRepo.findOne({ where: { id: dto.profesorId } });
+      if (!profesor || profesor.rol !== UserRole.PROFESOR) {
+        throw new BadRequestException('El profesorId no corresponde a un profesor');
+      }
+      profesorId = profesor.id;
+    }
+
     const materia = this.materiaRepo.create({
-      ...dto,
+      nombre: dto.nombre,
+      grupo: dto.grupo,
       profesorId,
     });
     return this.materiaRepo.save(materia);
   }
 
-  async findMisMaterias(profesorId: string): Promise<Materia[]> {
+  async findAll(): Promise<Materia[]> {
+    return this.materiaRepo.find({ order: { nombre: 'ASC' } });
+  }
+
+  async findMisMaterias(userId: string, rol: string): Promise<Materia[]> {
+    if (rol === UserRole.ESTUDIANTE) {
+      const inscripciones = await this.inscripcionRepo.find({
+        where: { estudianteId: userId },
+        relations: { materia: true },
+      });
+      return inscripciones
+        .map((i) => i.materia)
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+    }
+
     return this.materiaRepo.find({
-      where: { profesorId },
+      where: { profesorId: userId },
       order: { nombre: 'ASC' },
     });
   }
@@ -68,13 +97,17 @@ export class MateriasService {
     const materia = await this.materiaRepo.findOne({ where: { id: materiaId } });
     if (!materia) throw new NotFoundException('Materia no encontrada');
 
-    if (rol !== UserRole.ADMIN && materia.profesorId !== userId) {
+    const esAutoinscripcion = rol === UserRole.ESTUDIANTE;
+
+    if (!esAutoinscripcion && rol !== UserRole.ADMIN && materia.profesorId !== userId) {
       throw new ForbiddenException('No puedes inscribir en esta materia');
     }
 
     let estudiante: User | null = null;
 
-    if (dto.estudianteId) {
+    if (esAutoinscripcion) {
+      estudiante = await this.userRepo.findOne({ where: { id: userId } });
+    } else if (dto.estudianteId) {
       estudiante = await this.userRepo.findOne({ where: { id: dto.estudianteId } });
     } else if (dto.email) {
       estudiante = await this.userRepo.findOne({ where: { email: dto.email } });
@@ -90,7 +123,7 @@ export class MateriasService {
     const existe = await this.inscripcionRepo.findOne({
       where: { materiaId, estudianteId: estudiante.id },
     });
-    if (existe) throw new ConflictException('El estudiante ya está inscrito');
+    if (existe) throw new ConflictException('El estudiante ya esta inscrito');
 
     const inscripcion = this.inscripcionRepo.create({
       materiaId,
@@ -106,5 +139,18 @@ export class MateriasService {
         email: estudiante.email,
       },
     };
+  }
+
+  async remove(id: string) {
+    const materia = await this.materiaRepo.findOne({ where: { id } });
+    if (!materia) throw new NotFoundException('Materia no encontrada');
+
+    await this.materiaRepo.manager.transaction(async (manager) => {
+      await manager.delete(AsistenciaSesion, { materiaId: id });
+      await manager.delete(Inscripcion, { materiaId: id });
+      await manager.delete(Materia, { id });
+    });
+
+    return { message: 'Materia eliminada correctamente' };
   }
 }

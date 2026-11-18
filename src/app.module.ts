@@ -12,6 +12,8 @@ import { Materia } from './materias/entities/materia.entity.js';
 import { Inscripcion } from './materias/entities/inscripcion.entity.js';
 import { AsistenciaSesion } from './asistencias/entities/asistencia-sesion.entity.js';
 import { AsistenciaDetalle } from './asistencias/entities/asistencia-detalle.entity.js';
+import { Horario } from './horarios/entities/horario.entity.js';
+import { HorariosModule } from './horarios/horarios.module.js';
 
 @Module({
   imports: [
@@ -26,7 +28,7 @@ import { AsistenciaDetalle } from './asistencias/entities/asistencia-detalle.ent
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        entities: [User, Materia, Inscripcion, AsistenciaSesion, AsistenciaDetalle],
+        entities: [User, Materia, Inscripcion, AsistenciaSesion, AsistenciaDetalle, Horario],
         synchronize: configService.get<string>('DB_SYNCHRONIZE') === 'true',
       }),
     }),
@@ -34,6 +36,7 @@ import { AsistenciaDetalle } from './asistencias/entities/asistencia-detalle.ent
     AuthModule,
     MateriasModule,
     AsistenciasModule,
+    HorariosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
