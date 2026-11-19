@@ -199,23 +199,14 @@
 
           <!-- TAB 5: REPORTES Y ALERTAS ACADÉMICAS -->
           <q-tab-panel name="reportes" class="q-px-none">
-            <!-- Banner de Alertas Automáticas (Estudiantes en riesgo < 75%) -->
-            <q-banner v-if="estudiantesEnRiesgo.length > 0" rounded class="bg-red-1 text-negative border-subtle q-mb-lg shadow-1">
-              <template v-slot:avatar>
-                <q-icon name="warning" color="negative" size="32px" />
-              </template>
-              <div class="text-weight-bold text-subtitle1">¡Alerta Automática de Inasistencia Global!</div>
-              <div class="text-caption">
-                Hay <strong>{{ estudiantesEnRiesgo.length }} estudiante(s)</strong> que han superado el límite permitido de faltas y están en riesgo de reprobación.
-              </div>
-            </q-banner>
-
+          <div id="area-reporte">
+            
             <div class="row items-center justify-between q-mb-md">
               <div>
-                <div class="text-h6 text-weight-bold text-navy-dark">Consolidado General de Inasistencias</div>
+                <div class="text-h5 text-weight-bold text-navy-dark">Consolidado General de Inasistencias</div>
                 <div class="text-caption text-grey-6">Porcentajes de asistencia y estado académico actual por estudiante.</div>
               </div>
-              <q-btn unelevated rounded color="vinotinto" icon="print" label="Imprimir Reporte General" @click="imprimirReporte" class="text-weight-bold shadow-1" />
+              <q-btn unelevated color="vinotinto" icon="print" label="Imprimir Reporte General" class="q-px-md" @click="imprimirReporte" />
             </div>
 
             <q-card flat class="bg-white rounded-xl shadow-2 border-subtle overflow-hidden">
@@ -224,37 +215,28 @@
                   <q-tr :props="props">
                     <q-td key="nombre" :props="props" class="text-weight-bold text-navy-dark">
                       {{ props.row.nombre }}
-                      <div class="text-caption text-grey-6" style="font-size: 11px;">{{ props.row.email }}</div>
+                      <div class="text-caption text-grey-6">{{ props.row.email }}</div>
                     </q-td>
                     <q-td key="materia" :props="props">{{ props.row.materia }}</q-td>
                     <q-td key="totalClases" :props="props" class="text-center">{{ props.row.totalClases }}</q-td>
-                    <q-td key="porcentaje" :props="props">
-                      <div class="row items-center q-gutter-x-sm">
-                        <q-linear-progress 
-                          :value="props.row.porcentajeAsistencia / 100" 
-                          :color="props.row.porcentajeAsistencia >= 75 ? 'positive' : 'negative'" 
-                          class="q-my-sm" 
-                          style="width: 100px; height: 8px; border-radius: 4px;"
-                        />
-                        <span class="text-weight-bold" :class="props.row.porcentajeAsistencia >= 75 ? 'text-positive' : 'text-negative'">
-                          {{ props.row.porcentajeAsistencia }}%
-                        </span>
-                      </div>
+                    <q-td key="porcentajeAsistencia" :props="props" class="text-center">
+                      <q-linear-progress :value="props.row.porcentajeAsistencia / 100" color="primary" class="q-mt-sm" track-color="grey-3" />
+                      <span class="text-caption text-weight-bold" :class="props.row.porcentajeAsistencia < 75 ? 'text-negative' : 'text-positive'">
+                        {{ props.row.porcentajeAsistencia }}%
+                      </span>
                     </q-td>
                     <q-td key="estado" :props="props" class="text-center">
-                      <q-badge 
-                        :color="props.row.porcentajeAsistencia >= 75 ? 'green-1' : 'red-1'" 
-                        :text-color="props.row.porcentajeAsistencia >= 75 ? 'positive' : 'negative'"
-                        class="text-weight-bold q-px-sm q-py-xs"
-                      >
-                        {{ props.row.porcentajeAsistencia >= 75 ? 'REGULAR' : 'EN RIESGO / REPROBADO' }}
+                      <q-badge :color="props.row.porcentajeAsistencia < 75 ? 'red-1' : 'green-1'" :text-color="props.row.porcentajeAsistencia < 75 ? 'red-9' : 'green-9'" class="text-weight-bold q-px-sm q-py-xs">
+                        {{ props.row.porcentajeAsistencia < 75 ? 'EN RIESGO / REPROBADO' : 'REGULAR' }}
                       </q-badge>
                     </q-td>
                   </q-tr>
                 </template>
               </q-table>
             </q-card>
-          </q-tab-panel>
+
+          </div>
+        </q-tab-panel>
 
         </q-tab-panels>
 
@@ -413,24 +395,17 @@ const nuevaSeccion = ref({ codigoSeccion: '', materiaNombre: '', aulaAsignada: '
 const formMateria = ref({ nombre: '', grupo: '', profesorId: null });
 
 const estudiantesLista = ref([
-  { id: 1, nombre: 'Carlos Pérez', email: 'carlos@student.edu', materia: 'Arquitectura de Software', seccion: 'Sección 01' }
 ]);
 
 // Reportes y Alertas Académicas
 const reportesEstudiantes = ref([
-  { id: 1, nombre: 'Ana Sofía Pérez', email: 'ana.perez@universidad.edu', materia: 'Arquitectura de Software', totalClases: 20, porcentajeAsistencia: 90 },
-  { id: 2, nombre: 'Carlos Eduardo Gómez', email: 'carlos.gomez@universidad.edu', materia: 'Arquitectura de Software', totalClases: 20, porcentajeAsistencia: 60 },
-  { id: 3, nombre: 'María Alejandra Díaz', email: 'maria.diaz@universidad.edu', materia: 'Matemáticas Discretas', totalClases: 18, porcentajeAsistencia: 85 },
-  { id: 4, nombre: 'José Gregorio Rivas', email: 'jose.rivas@universidad.edu', materia: 'Sistemas Operativos', totalClases: 15, porcentajeAsistencia: 55 }
 ]);
 
 const estudiantesEnRiesgo = computed(() => {
   return reportesEstudiantes.value.filter(est => est.porcentajeAsistencia < 75);
 });
 
-const imprimirReporte = () => {
-  window.print();
-};
+
 
 // Matriz Horaria
 const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
@@ -490,15 +465,55 @@ const columnsReportes = [
 
 const cargarDatosAdmin = async () => {
   try {
-    const resMaterias = await api.get('/materias');
-    materiasGlobales.value = resMaterias.data;
+    // 1. Cargar estudiantes inscritos y reportes
+    const { data: materias } = await api.get('/materias/con-estudiantes');
+    
+    let todosLosEstudiantes = [];
+    let todosLosReportes = [];
 
-    const resUsuarios = await api.get('/users');
-    profesoresOptions.value = resUsuarios.data.filter(u => u.rol === 'PROFESOR');
+    materias.forEach(materia => {
+      if (materia.estudiantes && materia.estudiantes.length > 0) {
+        materia.estudiantes.forEach(est => {
+          todosLosEstudiantes.push({
+            id: est.id,
+            nombre: est.nombre,
+            email: est.email,
+            materia: materia.nombre,
+            seccion: materia.grupo || 'N/A'
+          });
+        });
+      }
+    });
+    estudiantesLista.value = todosLosEstudiantes;
+
+    // Cargar reportes
+    const reportesPromesas = materias.map(m => api.get(`/asistencias/reporte?materiaId=${m.id}`));
+    const respuestasReportes = await Promise.all(reportesPromesas);
+    respuestasReportes.forEach(res => {
+      if (Array.isArray(res.data)) todosLosReportes.push(...res.data);
+    });
+    reportesEstudiantes.value = todosLosReportes;
+
+    // 2. Cargar Asignaturas y Docentes
+    const { data: todasLasMaterias } = await api.get('/materias');
+    const materiasValidas = Array.isArray(todasLasMaterias) ? todasLasMaterias : (todasLasMaterias?.data || []);
+    materiasGlobales.value = materiasValidas;
+
+    // 3. Cargar Profesores para el dropdown
+    const { data: usuarios } = await api.get("/users");
+    const listaUsuarios = Array.isArray(usuarios) ? usuarios : (usuarios?.data || []);
+    profesoresOptions.value = listaUsuarios.filter(u => u.rol === "PROFESOR" || u.role === "PROFESOR").map(u => ({
+      id: u.id,
+      nombre: u.nombre || u.name || u.email || "Sin nombre"
+    }));
+
   } catch (error) {
-    console.error('Error al cargar datos del admin:', error);
+    console.error("Error cargando datos del admin:", error);
   }
 };
+
+
+
 
 onMounted(() => {
   cargarDatosAdmin();
@@ -654,6 +669,11 @@ const guardarHorario = async () => {
     $q.notify({ color: 'negative', message: Array.isArray(msg) ? msg.join(', ') : (msg || 'Error al guardar el horario'), position: 'top' });
   }
 };
+
+
+const imprimirReporte = () => {
+  window.print();
+};
 </script>
 
 <style scoped>
@@ -677,5 +697,52 @@ const guardarHorario = async () => {
 
 .border-top-subtle {
   border-top: 1px solid #f1f5f9;
+}
+</style>
+
+
+<style>
+
+</style>
+
+
+
+<style>
+@media print {
+  /* 1. Ocultar todo lo que no sea el reporte */
+  .q-header, .q-drawer, .q-footer, .q-tabs, .q-tab, .q-btn, .q-banner, .q-pagination {
+    display: none !important;
+  }
+  
+  /* 2. Asegurar que el fondo sea blanco */
+  body, .q-page, .q-page-container {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* 3. Darle un formato limpio a la tabla y quitarle sombras */
+  .q-card, .q-table__card {
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .q-table th {
+    background-color: #f0f0f0 !important;
+    color: #000 !important;
+    border-bottom: 2px solid #000 !important;
+    -webkit-print-color-adjust: exact;
+  }
+  
+  .q-table td {
+    border-bottom: 1px solid #ccc !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* 4. Ajustar el margen de la hoja */
+  @page {
+    margin: 1.5cm;
+  }
 }
 </style>

@@ -115,16 +115,19 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
+import api from '../services/api';
 
 const route = useRoute();
 const router = useRouter();
 const $q = useQuasar();
 
-const materiaId = route.params.id || '101';
+const materiaId = route.params.id;
 const dialogQR = ref(false);
+const loading = ref(false);
+const guardando = ref(false);
 
 const columns = [
   { name: 'nombre', label: 'ESTUDIANTE', field: 'nombre', align: 'left', sortable: true },
@@ -132,7 +135,6 @@ const columns = [
   { name: 'estado', label: 'ESTADO DE ASISTENCIA', field: 'estado', align: 'left' }
 ];
 
-// Opciones de asistencia requeridas por la rúbrica
 const opcionesAsistencia = [
   { label: 'Presente', value: 'Presente' },
   { label: 'Ausente', value: 'Ausente' },
@@ -140,22 +142,45 @@ const opcionesAsistencia = [
   { label: 'Justificado', value: 'Justificado' }
 ];
 
-// Nómina mock de estudiantes
-const estudiantes = ref([
-  { id: 1, nombre: 'Ana Sofía Pérez', email: 'ana.perez@universidad.edu', codigoQR: 'QR-EST-8842', estado: 'Presente' },
-  { id: 2, nombre: 'Carlos Eduardo Gómez', email: 'carlos.gomez@universidad.edu', codigoQR: 'QR-EST-9310', estado: 'Ausente' },
-  { id: 3, nombre: 'María Alejandra Díaz', email: 'maria.diaz@universidad.edu', codigoQR: 'QR-EST-1045', estado: 'Presente' }
-]);
+const estudiantes = ref([]);
+
+const cargarEstudiantes = async () => {
+  if (!materiaId) {
+    $q.notify({ type: 'negative', message: 'No se encontró el ID de la materia' });
+    return;
+  }
+
+  loading.value = true;
+  try {
+    const { data } = await api.get(`/materias/${materiaId}/estudiantes`);
+    const lista = Array.isArray(data) ? data : (data?.data || []);
+
+    estudiantes.value = lista.map((e) => ({
+      id: e.id,
+      nombre: e.nombre || e.name || 'Sin nombre',
+      email: e.email || '',
+      codigoQR: e.codigoQR || e.codigo || `QR-EST-${e.id}`,
+      estado: 'Presente'
+    }));
+  } catch (err) {
+    console.error('Error cargando estudiantes:', err.response?.data || err);
+    $q.notify({
+      type: 'negative',
+      message: err.response?.data?.message || 'Error al cargar los estudiantes de la materia'
+    });
+    estudiantes.value = [];
+  } finally {
+    loading.value = false;
+  }
+};
 
 const abrirEscanerQR = () => {
   dialogQR.value = true;
 };
 
-// Simulación de lo que hará el escáner al enviar el QR al backend
 const simularLecturaQR = () => {
   dialogQR.value = false;
-  
-  // Simulamos que el primer estudiante ausente pasa su QR exitosamente
+
   const estudianteEncontrado = estudiantes.value.find(e => e.estado === 'Ausente');
   if (estudianteEncontrado) {
     estudianteEncontrado.estado = 'Presente';
@@ -170,21 +195,55 @@ const simularLecturaQR = () => {
   });
 };
 
-const guardarAsistencia = () => {
-  $q.notify({
-    color: 'navy-dark',
-    textColor: 'white',
-    message: '¡Nómina de asistencia guardada correctamente (Modo Local)!',
-    icon: 'check_circle',
-    position: 'top'
-  });
+const guardarAsistencia = async () => {
+  if (estudiantes.value.length === 0) {
+    $q.notify({ type: "warning", message: "No hay estudiantes para guardar" });
+    return;
+  }
+
+  guardando.value = true;
+  try {
+    const payload = {
+      materiaId: materiaId,
+      fecha: new Date().toISOString(),
+      claseVista: false, // Corregido: con S
+      asistencias: estudiantes.value.map((est) => ({
+        estudianteId: est.id,
+        // Convertimos el estado a MAYÚSCULAS como pide el Enum de NestJS
+        estado: est.estado.toUpperCase() 
+      }))
+    };
+
+    await api.post("/asistencias", payload);
+
+    $q.notify({
+      color: "navy-dark",
+      textColor: "white",
+      message: "¡Nómina de asistencia guardada correctamente!",
+      icon: "check_circle",
+      position: "top"
+    });
+  } catch (err) {
+    console.error("Error guardando asistencia:", err.response?.data || err);
+    $q.notify({
+      type: "negative",
+      message: err.response?.data?.message || "Error al guardar la asistencia"
+    });
+  } finally {
+    guardando.value = false;
+  }
 };
 
 const logout = () => {
   localStorage.clear();
   router.push('/login');
 };
+
+onMounted(() => {
+  cargarEstudiantes();
+});
 </script>
+
 
 <style scoped>
 .bg-vinotinto { background-color: #6b1d2f !important; }

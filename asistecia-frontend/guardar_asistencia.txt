@@ -1,0 +1,11 @@
+const payload = {
+  materiaId: materiaId,
+  fecha: new Date().toISOString(),
+  classVista: false, // Agregamos esto
+  asistencias: estudiantes.value.map((est) => ({ // Cambiamos valueAsistencias por asistencias
+    estudianteId: est.id,
+    estado: est.estado
+  }))
+};
+
+await api.post('/asistencias', payload);

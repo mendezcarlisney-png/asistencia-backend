@@ -1,0 +1,39 @@
+const cargarDatosAdmin = async () => {
+  try {
+    // 1. Cargar estudiantes inscritos y reportes
+    const { data: materias } = await api.get('/materias/con-estudiantes');
+    
+    let todosLosEstudiantes = [];
+    let todosLosReportes = [];
+
+    materias.forEach(materia => {
+      if (materia.estudiantes && materia.estudiantes.length > 0) {
+        materia.estudiantes.forEach(est => {
+          todosLosEstudiantes.push({
+            id: est.id,
+            nombre: est.nombre,
+            email: est.email,
+            materia: materia.nombre,
+            seccion: materia.grupo || 'N/A'
+          });
+        });
+      }
+    });
+    estudiantesLista.value = todosLosEstudiantes;
+
+    // Cargar reportes
+    const reportesPromesas = materias.map(m => api.get(`/asistencias/reporte?materiaId=${m.id}`));
+    const respuestasReportes = await Promise.all(reportesPromesas);
+    respuestasReportes.forEach(res => {
+      if (Array.isArray(res.data)) todosLosReportes.push(...res.data);
+    });
+    reportesEstudiantes.value = todosLosReportes;
+
+    // 2. Cargar Asignaturas y Docentes Titulares
+    const { data: todasLasMaterias } = await api.get('/materias');
+    materiasGlobales.value = todasLasMaterias;
+
+  } catch (error) {
+    console.error("Error cargando datos del admin:", error);
+  }
+};

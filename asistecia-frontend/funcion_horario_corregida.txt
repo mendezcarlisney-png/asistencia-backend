@@ -1,0 +1,18 @@
+const cargarHorarioDocente = async () => {
+  try {
+    const { data: materias } = await api.get('/materias/mis-materias');
+    
+    // Mapeamos las materias a filas de horario
+    horarioDocente.value = materias.map((m) => ({
+      id: m.id,
+      dia: m.dia || 'Por asignar',
+      hora: m.horario || 'Por asignar',
+      materia: m.nombre,
+      aula: m.aula || 'Por asignar',
+      seccion: m.grupo || '-'
+    }));
+    
+  } catch (error) {
+    console.error('Error al cargar horario del profesor:', error);
+  }
+};

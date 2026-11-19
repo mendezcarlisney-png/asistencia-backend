@@ -1,37 +1,35 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
-  CreateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Materia } from '../../materias/entities/materia.entity.js';
+import { User } from '../../users/entities/user.entity.js';
 
-@Entity('horarios')
+@Entity('horarios_nuevos')
 export class Horario {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  materiaId: string;
-
-  @Column()
   dia: string;
 
-  @Column({ length: 5 })
+  @Column({ nullable: true })
   horaInicio: string;
 
-  @Column({ length: 5 })
+  @Column()
   horaFin: string;
 
   @Column({ nullable: true })
   aula: string;
 
-  @ManyToOne(() => Materia, { eager: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => Materia, { eager: true })
   @JoinColumn({ name: 'materiaId' })
   materia: Materia;
 
-  @CreateDateColumn()
-  createdAt: Date;
+  @Column()
+  materiaId: string;
+
+  @ManyToOne(() => User, { eager: true })
+  @JoinColumn({ name: 'profesorId' })
+  profesor: User;
+
+  @Column()
+  profesorId: string;
 }

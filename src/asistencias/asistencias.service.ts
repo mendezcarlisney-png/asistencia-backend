@@ -92,7 +92,7 @@ export class AsistenciasService {
     const materia = await this.materiaRepo.findOne({ where: { id: materiaId } });
     if (!materia) throw new NotFoundEx('Materia no encontrada');
     if (rol !== 'ADMIN' && materia.profesorId !== userId) throw new ForbiddenEx('No tienes acceso a esta materia');
-    const sesiones = await this.sesionRepo.find({ where: { materiaId, claseVista: true }, relations: { detalles: true } });
+    const sesiones = await this.sesionRepo.find({ where: { materiaId }, relations: { detalles: true } });
     const insc = await this.sesionRepo.manager.getRepository(Inscripcion).find({ where: { materiaId }, relations: { estudiante: true } });
     const total = sesiones.length;
     return insc.map((i) => {

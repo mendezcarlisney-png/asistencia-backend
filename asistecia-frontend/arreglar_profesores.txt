@@ -1,0 +1,10 @@
+    // 3. Cargar Profesores para el dropdown
+    const { data: usuarios } = await api.get('/users');
+    const listaUsuarios = Array.isArray(usuarios) ? usuarios : (usuarios?.data || []);
+    
+    profesoresOptions.value = listaUsuarios
+      .filter(u => u.rol === 'PROFESOR' || u.role === 'PROFESOR')
+      .map(u => ({
+        id: u.id,
+        nombre: u.nombre || u.name || u.email || 'Sin nombre'
+      }));

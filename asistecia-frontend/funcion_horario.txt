@@ -1,0 +1,25 @@
+
+// Cargar datos para el Horario Docente
+const cargarHorarioDocente = async () => {
+  try {
+    // Usamos el endpoint de las materias del profesor
+    const { data: materias } = await api.get('/materias/mis-materias');
+    
+    // Mapeamos las materias para que se vean en la tabla de horario
+    const horarioReal = materias.map(m => ({
+      id: m.id,
+      dia: m.dia || 'Por asignar',
+      bloque: m.horario || 'Por asignar',
+      materia: m.nombre,
+      aula: m.aula || 'Por asignar'
+    }));
+    
+    horarioDocente.value = horarioReal;
+  } catch (error) {
+    console.error("Error al cargar horario:", error);
+  }
+};
+
+onMounted(() => {
+  cargarHorarioDocente();
+});

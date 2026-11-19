@@ -1,0 +1,134 @@
+<template>
+  <!-- aquí va tu template -->
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
+import api from 'src/services/api';
+
+const route = useRoute();
+const router = useRouter();
+const $q = useQuasar();
+
+const materiaId = route.params.id;
+const dialogQR = ref(false);
+const loading = ref(false);
+const guardando = ref(false);
+
+const columns = [
+  { name: 'nombre', label: 'ESTUDIANTE', field: 'nombre', align: 'left', sortable: true },
+  { name: 'qrStatus', label: 'CÓDIGO QR / CARNET', field: 'codigoQR', align: 'center' },
+  { name: 'estado', label: 'ESTADO DE ASISTENCIA', field: 'estado', align: 'left' }
+];
+
+const opcionesAsistencia = [
+  { label: 'Presente', value: 'Presente' },
+  { label: 'Ausente', value: 'Ausente' },
+  { label: 'Tardanza', value: 'Tardanza' },
+  { label: 'Justificado', value: 'Justificado' }
+];
+
+const estudiantes = ref([]);
+
+const cargarEstudiantes = async () => {
+  if (!materiaId) {
+    $q.notify({ type: 'negative', message: 'No se encontró el ID de la materia' });
+    return;
+  }
+
+  loading.value = true;
+  try {
+    const { data } = await api.get(`/materias/${materiaId}/estudiantes`);
+    const lista = Array.isArray(data) ? data : (data?.data || []);
+
+    estudiantes.value = lista.map((e) => ({
+      id: e.id,
+      nombre: e.nombre || e.name || 'Sin nombre',
+      email: e.email || '',
+      codigoQR: e.codigoQR || e.codigo || `QR-EST-${e.id}`,
+      estado: 'Presente'
+    }));
+  } catch (err) {
+    console.error('Error cargando estudiantes:', err.response?.data || err);
+    $q.notify({
+      type: 'negative',
+      message: err.response?.data?.message || 'Error al cargar los estudiantes de la materia'
+    });
+    estudiantes.value = [];
+  } finally {
+    loading.value = false;
+  }
+};
+
+const abrirEscanerQR = () => {
+  dialogQR.value = true;
+};
+
+const simularLecturaQR = () => {
+  dialogQR.value = false;
+
+  const estudianteEncontrado = estudiantes.value.find(e => e.estado === 'Ausente');
+  if (estudianteEncontrado) {
+    estudianteEncontrado.estado = 'Presente';
+  }
+
+  $q.notify({
+    color: 'navy-dark',
+    textColor: 'white',
+    message: '¡QR escaneado con éxito! Asistencia registrada.',
+    icon: 'verified',
+    position: 'top'
+  });
+};
+
+const guardarAsistencia = async () => {
+  if (estudiantes.value.length === 0) {
+    $q.notify({ type: 'warning', message: 'No hay estudiantes para guardar' });
+    return;
+  }
+
+  guardando.value = true;
+  try {
+    const promesas = estudiantes.value.map((est) =>
+      api.post('/asistencias', {
+        materiaId: Number(materiaId),
+        estudianteId: est.id,
+        estado: est.estado
+      })
+    );
+
+    await Promise.all(promesas);
+
+    $q.notify({
+      color: 'navy-dark',
+      textColor: 'white',
+      message: '¡Nómina de asistencia guardada correctamente!',
+      icon: 'check_circle',
+      position: 'top'
+    });
+  } catch (err) {
+    console.error('Error guardando asistencia:', err.response?.data || err);
+    $q.notify({
+      type: 'negative',
+      message: err.response?.data?.message || 'Error al guardar la asistencia'
+    });
+  } finally {
+    guardando.value = false;
+  }
+};
+
+const logout = () => {
+  localStorage.clear();
+  router.push('/login');
+};
+
+onMounted(() => {
+  cargarEstudiantes();
+});
+</script>
+
+<style scoped>
+/* estilos */
+</style>

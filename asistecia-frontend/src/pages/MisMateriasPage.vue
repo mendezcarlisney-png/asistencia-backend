@@ -326,22 +326,29 @@ const hora12 = (hhmm) => {
 
 const cargarHorarioDocente = async () => {
   try {
-    const res = await api.get('/horarios/mios');
-    const resumen = {};
-    horarioDocente.value = res.data.map((h) => {
-      const dia = DIAS_LABEL[h.dia] || h.dia;
-      const hora = hora12(h.horaInicio) + ' - ' + hora12(h.horaFin);
-      resumen[h.materiaId] = (resumen[h.materiaId] ? resumen[h.materiaId] + ' / ' : '') + dia.slice(0, 3) + ' ' + hora;
-      return { id: h.id, dia, hora, materia: h.materia?.nombre, aula: h.aula || '-', seccion: h.materia?.grupo || '-' };
-    });
-    materiasDocente.value = materiasDocente.value.map((m) => ({
-      ...m,
-      horario: resumen[m.id] || 'Sin horario asignado'
+    const { data: materias } = await api.get('/materias/mis-materias');
+    
+    // Mapeamos las materias a filas de horario
+    horarioDocente.value = materias.map((m) => ({
+      id: m.id,
+      dia: m.dia || 'Por asignar',
+      hora: m.horario || 'Por asignar',
+      materia: m.nombre,
+      aula: m.aula || 'Por asignar',
+      seccion: m.grupo || '-'
     }));
+    
   } catch (error) {
-    console.error('No se pudo cargar el horario del profesor:', error);
+    console.error('Error al cargar horario del profesor:', error);
   }
 };
+
+
+
+onMounted(() => {
+  cargarHorarioDocente();
+});
+
 </script>
 
 <style scoped>

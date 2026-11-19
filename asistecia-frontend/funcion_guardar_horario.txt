@@ -1,0 +1,19 @@
+
+const guardarAsignacion = async () => {
+  try {
+    await api.post('/horarios', {
+      dia: nuevoBloque.value.dia,
+      horaInicio: nuevoBloque.value.horaInicio,
+      horaFin: nuevoBloque.value.horaFin,
+      aula: nuevoBloque.value.aula,
+      materiaId: nuevoBloque.value.materiaId,
+      profesorId: nuevoBloque.value.profesorId
+    });
+    $q.notify({ type: 'positive', message: 'Horario asignado correctamente' });
+    // Opcional: Recargar la tabla o cerrar el modal
+    cargarDatosAdmin(); // Vuelve a cargar las materias/horarios
+  } catch (error) {
+    console.error("Error al guardar horario:", error);
+    $q.notify({ type: 'negative', message: 'Error al guardar la asignación' });
+  }
+};

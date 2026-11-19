@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Horario } from './entities/horario.entity.js';
-import { Materia } from '../materias/entities/materia.entity.js';
-import { HorariosController } from './horarios.controller.js';
 import { HorariosService } from './horarios.service.js';
+import { HorariosController } from './horarios.controller.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Horario, Materia])],
+  imports: [TypeOrmModule.forFeature([Horario])],
   controllers: [HorariosController],
   providers: [HorariosService],
 })

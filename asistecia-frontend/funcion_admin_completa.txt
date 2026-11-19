@@ -1,0 +1,50 @@
+const cargarDatosAdmin = async () => {
+  try {
+    // 1. Cargar estudiantes inscritos y reportes
+    const { data: materias } = await api.get('/materias/con-estudiantes');
+    
+    let todosLosEstudiantes = [];
+    let todosLosReportes = [];
+
+    materias.forEach(materia => {
+      if (materia.estudiantes && materia.estudiantes.length > 0) {
+        materia.estudiantes.forEach(est => {
+          todosLosEstudiantes.push({
+            id: est.id,
+            nombre: est.nombre,
+            email: est.email,
+            materia: materia.nombre,
+            seccion: materia.grupo || 'N/A'
+          });
+        });
+      }
+    });
+    estudiantesLista.value = todosLosEstudiantes;
+
+    // Cargar reportes
+    const reportesPromesas = materias.map(m => api.get(`/asistencias/reporte?materiaId=${m.id}`));
+    const respuestasReportes = await Promise.all(reportesPromesas);
+    respuestasReportes.forEach(res => {
+      if (Array.isArray(res.data)) todosLosReportes.push(...res.data);
+    });
+    reportesEstudiantes.value = todosLosReportes;
+
+    // 2. Cargar Asignaturas y Docentes
+    const { data: todasLasMaterias } = await api.get('/materias');
+    const materiasValidas = Array.isArray(todasLasMaterias) ? todasLasMaterias : (todasLasMaterias?.data || []);
+    materiasGlobales.value = materiasValidas;
+
+    // 3. Cargar Profesores para el dropdown
+    const { data: usuarios } = await api.get('/users');
+    const listaUsuarios = Array.isArray(usuarios) ? usuarios : (usuarios?.data || []);
+    
+    // Filtramos solo los que tengan rol de PROFESOR
+    profesoresOptions.value = listaUsuarios.filter(u => u.rol === 'PROFESOR' || u.role === 'PROFESOR').map(u => ({
+      label: u.nombre || u.name || u.email,
+      value: u.id
+    }));
+
+  } catch (error) {
+    console.error("Error cargando datos del admin:", error);
+  }
+};

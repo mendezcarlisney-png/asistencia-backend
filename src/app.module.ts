@@ -1,44 +1,30 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
-import { UsersModule } from './users/users.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { UsersModule } from './users/users.module.js';
 import { MateriasModule } from './materias/materias.module.js';
 import { AsistenciasModule } from './asistencias/asistencias.module.js';
-import { User } from './users/entities/user.entity.js';
-import { Materia } from './materias/entities/materia.entity.js';
-import { Inscripcion } from './materias/entities/inscripcion.entity.js';
-import { AsistenciaSesion } from './asistencias/entities/asistencia-sesion.entity.js';
-import { AsistenciaDetalle } from './asistencias/entities/asistencia-detalle.entity.js';
-import { Horario } from './horarios/entities/horario.entity.js';
-import { HorariosModule } from './horarios/horarios.module.js';
+import { HorariosModule } from './horarios/horarios.module.js'; // <-- Tu nuevo módulo
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT', 5432),
-        username: configService.get<string>('DB_USERNAME'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_NAME'),
-        entities: [User, Materia, Inscripcion, AsistenciaSesion, AsistenciaDetalle, Horario],
-        synchronize: configService.get<string>('DB_SYNCHRONIZE') === 'true',
-      }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
+      username: process.env.DB_USERNAME || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+      database: process.env.DB_NAME || 'asistencia_db',
+      autoLoadEntities: true,
+      synchronize: true,
     }),
-    UsersModule,
     AuthModule,
+    UsersModule,
     MateriasModule,
     AsistenciasModule,
-    HorariosModule,
+    HorariosModule, // <-- Registrado correctamente
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

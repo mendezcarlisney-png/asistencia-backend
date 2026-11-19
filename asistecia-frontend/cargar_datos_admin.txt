@@ -1,0 +1,48 @@
+
+// --- CONEXIÓN A LA BASE DE DATOS REAL (ADMIN) ---
+import api from '../services/api';
+
+const cargarDatosAdmin = async () => {
+  try {
+    // 1. Cargar estudiantes inscritos y reportes
+    const { data: materias } = await api.get('/materias/con-estudiantes');
+    
+    let todosLosEstudiantes = [];
+    let todosLosReportes = [];
+
+    // Aplanamos los datos de estudiantes para la tabla
+    materias.forEach(materia => {
+      if (materia.estudiantes && materia.estudiantes.length > 0) {
+        materia.estudiantes.forEach(est => {
+          todosLosEstudiantes.push({
+            id: est.id,
+            nombre: est.nombre,
+            email: est.email,
+            materia: materia.nombre,
+            seccion: materia.grupo || 'N/A'
+          });
+        });
+      }
+    });
+    estudiantesLista.value = todosLosEstudiantes;
+
+    // 2. Cargar reportes globales (iterando por cada materia)
+    const reportesPromesas = materias.map(m => api.get(`/asistencias/reporte?materiaId=${m.id}`));
+    const respuestasReportes = await Promise.all(reportesPromesas);
+    
+    respuestasReportes.forEach(res => {
+      if (Array.isArray(res.data)) {
+        todosLosReportes.push(...res.data);
+      }
+    });
+    reportesEstudiantes.value = todosLosReportes;
+
+  } catch (error) {
+    console.error("Error cargando datos del admin:", error);
+  }
+};
+
+onMounted(() => {
+  cargarDatosAdmin();
+});
+// --- FIN CONEXIÓN ---

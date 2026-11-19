@@ -8,6 +8,8 @@ import {
 import { User } from '../../users/entities/user.entity.js';
 
 export enum EstadoAsistencia {
+  TARDANZA = 'TARDANZA',
+  JUSTIFICADO = 'JUSTIFICADO',
   PRESENTE = 'PRESENTE',
   AUSENTE = 'AUSENTE',
 }

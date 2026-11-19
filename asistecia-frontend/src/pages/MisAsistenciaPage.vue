@@ -76,8 +76,7 @@
                 </div>
 
                 <div class="q-mt-md q-pt-sm border-top-subtle row items-center justify-between">
-                  <div class="text-caption text-grey-7">Prof. Asignado</div>
-                  <q-btn flat dense color="navy-dark" icon="visibility" label="Ver Detalles" size="sm" class="text-weight-bold" />
+                  <div class="text-caption text-grey-7">Prof. {{ materia.profesor?.nombre || 'Asignado' }}</div>
                 </div>
               </q-card>
             </div>

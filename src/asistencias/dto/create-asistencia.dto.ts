@@ -15,7 +15,7 @@ class AsistenciaItemDto {
   estudianteId: string;
 
   @IsEnum(EstadoAsistencia, {
-    message: 'estado debe ser PRESENTE o AUSENTE',
+    
   })
   estado: EstadoAsistencia;
 }

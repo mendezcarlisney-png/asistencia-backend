@@ -1,0 +1,34 @@
+const cargarDatosAdmin = async () => {
+  try {
+    // 1. Cargar estudiantes inscritos
+    const { data: materias } = await api.get('/materias/con-estudiantes');
+    let todosLosEstudiantes = [];
+    
+    materias.forEach(materia => {
+      if (materia.estudiantes && materia.estudiantes.length > 0) {
+        materia.estudiantes.forEach(est => {
+          todosLosEstudiantes.push({
+            id: est.id,
+            nombre: est.nombre,
+            email: est.email,
+            materia: materia.nombre,
+            seccion: materia.grupo || 'N/A'
+          });
+        });
+      }
+    });
+    estudiantesLista.value = todosLosEstudiantes;
+
+    // 2. Cargar reportes globales
+    const reportesPromesas = materias.map(m => api.get(`/asistencias/reporte?materiaId=${m.id}`));
+    const respuestasReportes = await Promise.all(reportesPromesas);
+    let todosLosReportes = [];
+    respuestasReportes.forEach(res => {
+      if (Array.isArray(res.data)) todosLosReportes.push(...res.data);
+    });
+    reportesEstudiantes.value = todosLosReportes;
+
+  } catch (error) {
+    console.error("Error cargando datos del admin:", error);
+  }
+};

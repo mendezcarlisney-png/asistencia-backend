@@ -55,7 +55,7 @@ export class MateriasService {
     if (rol === UserRole.ESTUDIANTE) {
       const inscripciones = await this.inscripcionRepo.find({
         where: { estudianteId: userId },
-        relations: { materia: true },
+        relations: { materia: { profesor: true } },
       });
       return inscripciones
         .map((i) => i.materia)
