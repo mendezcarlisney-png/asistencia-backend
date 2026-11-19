@@ -130,44 +130,16 @@
       </q-page>
     </q-page-container>
 
-    <!-- Modal / Diálogo para Inscribirse a una Materia -->
-    <q-dialog v-model="dialogInscribir" persistent>
-      <q-card style="width: 400px; border-radius: 16px;" class="q-pa-md">
-        <q-card-section class="row items-center justify-between q-pb-none">
-          <div class="text-h6 text-navy-dark text-weight-bold">Inscripción a Curso</div>
-          <q-btn icon="close" flat round dense v-close-popup />
-        </q-card-section>
+    <!-- Modal: materias disponibles en acordeon -->
+    <DialogInscribir v-model="dialogInscribir" />
 
-        <q-card-section>
-          <p class="text-caption text-grey-6 q-mb-md">
-            Ingresa el código único proporcionado por tu profesor para matricularte en la asignatura.
-          </p>
-          <q-input
-            v-model="codigoMateria"
-            label="Código de la Materia (ID)"
-            outlined
-            dense
-            class="bg-grey-1"
-            :rules="[val => !!val || 'El código es obligatorio']"
-          >
-            <template v-slot:prepend>
-              <q-icon name="vpn_key" color="navy-dark" />
-            </template>
-          </q-input>
-        </q-card-section>
-
-        <q-card-actions align="right" class="q-px-md q-pb-md">
-          <q-btn flat label="Cancelar" color="grey-7" v-close-popup />
-          <q-btn unelevated label="Inscribirme" color="navy-dark" @click="inscribirMateria" class="text-weight-bold q-px-md" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
 
   </q-layout>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import DialogInscribir from "../components/DialogInscribir.vue";
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import api from '../services/api';
@@ -175,81 +147,100 @@ import api from '../services/api';
 const router = useRouter();
 const $q = useQuasar();
 const user = ref(null);
-const tabActiva = ref('materias'); // Pestaña inicial estilo Moodle
+const tabActiva = ref('materias');
 const materiasInscritas = ref([]);
+const materiasDisponibles = ref([]);
 const asistencias = ref([]);
 const dialogInscribir = ref(false);
-const codigoMateria = ref('');
+const cargandoDisponibles = ref(false);
+const inscribiendoId = ref(null);
 
 const columns = [
-  { name: 'materia', label: 'ASIGNATURA', field: row => row.materia?.nombre || 'Materia General', align: 'left', sortable: true },
-  { name: 'fecha', label: 'FECHA DE CLASE', field: row => row.fecha || 'Reciente', align: 'left', sortable: true },
-  { name: 'estado', label: 'ESTATUS', field: 'presente', align: 'center', sortable: true }
+  { name: 'materia', label: 'ASIGNATURA', field: (row) => row.materiaNombre || 'Materia', align: 'left', sortable: true },
+  { name: 'fecha', label: 'FECHA DE CLASE', field: (row) => row.fecha || '-', align: 'left', sortable: true },
+  { name: 'estado', label: 'ESTATUS', field: 'presente', align: 'center', sortable: true },
 ];
 
-onMounted(async () => {
-  const userData = localStorage.getItem('user');
-  if (userData) {
-    user.value = JSON.parse(userData);
+const mapAsistencias = (lista) =>
+  (lista || []).map((a) => ({
+    ...a,
+    presente: a.estado === 'PRESENTE' || a.presente === true,
+    materiaNombre: typeof a.materia === 'string' ? a.materia : a.materia?.nombre || 'Materia',
+  }));
+
+const cargarDisponibles = async () => {
+  cargandoDisponibles.value = true;
+  try {
+    const res = await api.get('/materias/disponibles');
+    materiasDisponibles.value = res.data || [];
+  } catch (e) {
+    materiasDisponibles.value = [];
+    $q.notify({
+      color: 'negative',
+      message: 'No se pudieron cargar las materias disponibles',
+      icon: 'report_problem',
+      position: 'top',
+    });
+  } finally {
+    cargandoDisponibles.value = false;
   }
-  await cargarDatos();
-});
+};
 
 const cargarDatos = async () => {
   $q.loading.show({ message: 'Sincronizando campus virtual...' });
   try {
-    // Cargar asistencias e inscripciones del estudiante
     const resAsistencias = await api.get('/asistencias/estudiante');
-    asistencias.value = resAsistencias.data;
-
-    // Si tienes un endpoint para listar las materias del estudiante, cárgalo aquí:
-    // const resMaterias = await api.get('/materias/mis-materias');
-    // materiasInscritas.value = resMaterias.data;
-    
-    // Datos de ejemplo simulando cursos estilo Moodle mientras conectas el endpoint
-    materiasInscritas.value = [
-      { id: '1', nombre: 'Programación Avanzada I', descripcion: 'Desarrollo backend con NestJS y TypeORM.' },
-      { id: '2', nombre: 'Bases de Datos Relacionales', descripcion: 'Modelado y optimización en PostgreSQL.' }
-    ];
+    const resMaterias = await api.get('/materias/mis-materias');
+    asistencias.value = mapAsistencias(resAsistencias.data);
+    materiasInscritas.value = resMaterias.data || [];
   } catch (error) {
     $q.notify({
       color: 'negative',
       message: 'Error al cargar los datos del campus',
       icon: 'report_problem',
-      position: 'top'
+      position: 'top',
     });
   } finally {
     $q.loading.hide();
   }
 };
 
-const inscribirMateria = async () => {
-  if (!codigoMateria.value) return;
-
+const inscribirMateria = async (materiaId) => {
+  if (!materiaId) return;
+  inscribiendoId.value = materiaId;
   try {
-    await api.post(`/materias/${codigoMateria.value}/inscribir`);
-    
+    await api.post('/materias/' + materiaId + '/inscribir', {});
     $q.notify({
-      color: 'navy-dark',
-      textColor: 'white',
-      message: '¡Te has matriculado en el curso exitosamente!',
+      color: 'positive',
+      message: 'Te has matriculado en el curso exitosamente',
       icon: 'check_circle',
-      position: 'top'
+      position: 'top',
     });
-
-    codigoMateria.value = '';
     dialogInscribir.value = false;
     await cargarDatos();
+    await cargarDisponibles();
   } catch (error) {
-    const errorMsg = error.response?.data?.message || 'No se pudo completar la inscripción';
+    const errorMsg = error.response?.data?.message || 'No se pudo completar la inscripcion';
     $q.notify({
       color: 'negative',
       message: Array.isArray(errorMsg) ? errorMsg[0] : errorMsg,
       icon: 'error',
-      position: 'top'
+      position: 'top',
     });
+  } finally {
+    inscribiendoId.value = null;
   }
 };
+
+watch(dialogInscribir, (abierto) => {
+  if (abierto) cargarDisponibles();
+});
+
+onMounted(async () => {
+  const userData = localStorage.getItem('user');
+  if (userData) user.value = JSON.parse(userData);
+  await cargarDatos();
+});
 
 const logout = () => {
   localStorage.removeItem('token');
@@ -257,6 +248,7 @@ const logout = () => {
   router.push('/login');
 };
 </script>
+
 
 <style scoped>
 .bg-vinotinto { background-color: #6b1d2f !important; }
