@@ -227,6 +227,9 @@
 </template>
 
 <script setup>
+import { useReporteTodas } from '../services/useReporteTodas.js';
+
+import { useEstudiantesTodas } from "../services/useEstudiantesTodas.js";
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
@@ -249,24 +252,18 @@ const opcionesFiltroMaterias = computed(() => {
 
 const horarioDocente = ref([]);
 
-const estudiantesAsignados = ref([
-  { id: 1, nombre: 'Ana Sofía Pérez', email: 'ana.perez@universidad.edu', materia: 'Arquitectura de Software', seccion: 'Sección 01', qr: 'QR-EST-8842' },
-  { id: 2, nombre: 'Carlos Eduardo Gómez', email: 'carlos.gomez@universidad.edu', materia: 'Arquitectura de Software', seccion: 'Sección 01', qr: 'QR-EST-9310' },
-  { id: 3, nombre: 'María Alejandra Díaz', email: 'maria.diaz@universidad.edu', materia: 'Matemáticas Discretas', seccion: 'Sección 02', qr: 'QR-EST-1045' }
-]);
+const { estudiantes: estudiantesAsignados } = useEstudiantesTodas();
 
-const reportesEstudiantes = ref([
-  { id: 1, nombre: 'Ana Sofía Pérez', email: 'ana.perez@universidad.edu', materia: 'Arquitectura de Software', totalClases: 20, porcentajeAsistencia: 90 },
-  { id: 2, nombre: 'Carlos Eduardo Gómez', email: 'carlos.gomez@universidad.edu', materia: 'Arquitectura de Software', totalClases: 20, porcentajeAsistencia: 60 },
-  { id: 3, nombre: 'María Alejandra Díaz', email: 'maria.diaz@universidad.edu', materia: 'Matemáticas Discretas', totalClases: 18, porcentajeAsistencia: 85 }
-]);
+const { filas: reportesEstudiantes } = useReporteTodas();
 
 // Computed para filtrar la tabla según la materia seleccionada
 const reportesFiltrados = computed(() => {
+  const arr = reportesEstudiantes.value;
+  const rawList = Array.isArray(arr) ? arr : (arr?.filas || []);
   if (!materiaSeleccionadaFiltro.value || materiaSeleccionadaFiltro.value === 'Todas las materias') {
-    return reportesEstudiantes.value;
+    return rawList;
   }
-  return reportesEstudiantes.value.filter(est => est.materia === materiaSeleccionadaFiltro.value);
+  return rawList.filter(est => est.materia === materiaSeleccionadaFiltro.value);
 });
 
 // Computed para detectar estudiantes en riesgo basados en el filtro activo
@@ -279,15 +276,12 @@ const columnsHorario = [
   { name: 'hora', label: 'BLOQUE HORARIO', field: 'hora', align: 'left' },
   { name: 'materia', label: 'ASIGNATURA', field: 'materia', align: 'left' },
   { name: 'aula', label: 'AULA', field: 'aula', align: 'left' },
-  { name: 'seccion', label: 'SECCIÓN', field: 'seccion', align: 'left' }
 ];
 
 const columnsEstudiantes = [
   { name: 'nombre', label: 'ESTUDIANTE', field: 'nombre', align: 'left', sortable: true },
   { name: 'email', label: 'CORREO INSTITUCIONAL', field: 'email', align: 'left' },
   { name: 'materia', label: 'MATERIA', field: 'materia', align: 'left' },
-  { name: 'seccion', label: 'SECCIÓN', field: 'seccion', align: 'left' },
-  { name: 'qr', label: 'CÓDIGO QR / CARNET', field: 'qr', align: 'center' }
 ];
 
 const columnsReportes = [
