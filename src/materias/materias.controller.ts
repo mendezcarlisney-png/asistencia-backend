@@ -40,9 +40,22 @@ export class MateriasController {
     return this.materiasService.findAll();
   }
 
+  @Get('con-estudiantes')
+  @Roles(UserRole.ADMIN)
+  conEstudiantes() {
+    return this.materiasService.findAllConEstudiantes();
+  }
+
   @Get('mis-materias')
   misMaterias(@Req() req: any) {
     return this.materiasService.findMisMaterias(req.user.userId, req.user.rol);
+  }
+
+
+  @Get('disponibles')
+  @Roles(UserRole.ESTUDIANTE)
+  disponibles(@Req() req: any) {
+    return this.materiasService.findDisponibles(req.user.userId);
   }
 
   @Get(':id/estudiantes')

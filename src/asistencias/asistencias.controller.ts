@@ -23,6 +23,12 @@ export class AsistenciasController {
     return this.asistenciasService.findMisSesiones(req.user.userId);
   }
 
+  @Get('reporte')
+  @Roles(UserRole.ADMIN, UserRole.PROFESOR)
+  reporte(@Req() req: any) {
+    return this.asistenciasService.reporte(req.query.materiaId, req.user.userId, req.user.rol);
+  }
+
   @Get('estudiante')
   @Roles(UserRole.ESTUDIANTE)
   misAsistencias(@Req() req: any) {

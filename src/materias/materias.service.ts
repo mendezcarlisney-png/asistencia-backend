@@ -153,4 +153,39 @@ export class MateriasService {
 
     return { message: 'Materia eliminada correctamente' };
   }
+
+  async findDisponibles(estudianteId: string): Promise<Materia[]> {
+    return this.materiaRepo
+      .createQueryBuilder('m')
+      .leftJoin('m.profesor', 'p')
+      .addSelect(['p.id', 'p.nombre'])
+      .where((qb) => {
+        const sub = qb
+          .subQuery()
+          .select('i.materiaId')
+          .from(Inscripcion, 'i')
+          .where('i.estudianteId = :estudianteId')
+          .getQuery();
+        return 'm.id NOT IN ' + sub;
+      })
+      .setParameter('estudianteId', estudianteId)
+      .orderBy('m.nombre', 'ASC')
+      .getMany();
+  }
+
+
+  async findAllConEstudiantes() {
+    const materias = await this.materiaRepo.find({ order: { nombre: 'ASC' } });
+    const insc = await this.inscripcionRepo.find({ relations: { estudiante: true } });
+    return materias.map((m) => ({
+      id: m.id,
+      nombre: m.nombre,
+      grupo: m.grupo,
+      profesor: m.profesor?.nombre ?? null,
+      estudiantes: insc
+        .filter((i) => i.materiaId === m.id)
+        .map((i) => ({ id: i.estudiante.id, nombre: i.estudiante.nombre, email: i.estudiante.email })),
+    }));
+  }
+
 }

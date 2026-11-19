@@ -1,3 +1,5 @@
+import { ForbiddenException as ForbiddenEx, NotFoundException as NotFoundEx } from '@nestjs/common';
+import { Inscripcion } from '../materias/entities/inscripcion.entity.js';
 import {
   Injectable,
   NotFoundException,
@@ -85,4 +87,23 @@ export class AsistenciasService {
       materia: d.sesion.materia?.nombre,
     }));
   }
+
+  async reporte(materiaId: string, userId: string, rol: string) {
+    const materia = await this.materiaRepo.findOne({ where: { id: materiaId } });
+    if (!materia) throw new NotFoundEx('Materia no encontrada');
+    if (rol !== 'ADMIN' && materia.profesorId !== userId) throw new ForbiddenEx('No tienes acceso a esta materia');
+    const sesiones = await this.sesionRepo.find({ where: { materiaId, claseVista: true }, relations: { detalles: true } });
+    const insc = await this.sesionRepo.manager.getRepository(Inscripcion).find({ where: { materiaId }, relations: { estudiante: true } });
+    const total = sesiones.length;
+    return insc.map((i) => {
+      const presentes = sesiones.filter((s) => s.detalles.some((d) => d.estudianteId === i.estudianteId && String(d.estado) === 'PRESENTE')).length;
+      const pct = total ? Math.round((presentes / total) * 1000) / 10 : 100;
+      return {
+        id: i.estudiante.id, nombre: i.estudiante.nombre, email: i.estudiante.email,
+        materia: materia.nombre, totalClases: total, presentes, ausentes: total - presentes,
+        porcentajeAsistencia: pct, enRiesgo: pct < 75,
+      };
+    });
+  }
+
 }

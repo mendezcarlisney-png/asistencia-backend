@@ -1,8 +1,8 @@
-// src/auth/auth.service.ts
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service.js';
 import * as bcrypt from 'bcrypt';
+import { UserRole } from '../users/entities/user.entity.js';
 
 @Injectable()
 export class AuthService {
@@ -11,7 +11,6 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  // Validar credenciales de usuario para el Login
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
     if (user && (await bcrypt.compare(pass, user.password))) {
@@ -21,7 +20,6 @@ export class AuthService {
     return null;
   }
 
-  // Generar el token de acceso JWT tras un login exitoso
   async login(user: any) {
     const payload = { email: user.email, sub: user.id, rol: user.rol };
     return {
@@ -30,23 +28,40 @@ export class AuthService {
     };
   }
 
-  // Registro de un nuevo usuario en el sistema
   async register(createUserDto: any) {
+    const nombre = createUserDto.nombre ?? createUserDto.name;
+    if (!nombre || !String(nombre).trim()) {
+      throw new ConflictException('El nombre es obligatorio');
+    }
+
+    const allowed = ['ESTUDIANTE', 'PROFESOR', 'ADMIN'];
+    const rawRol = createUserDto.rol ?? createUserDto.role ?? 'ESTUDIANTE';
+    const roleMap: Record<string, string> = { administrador: 'ADMIN', admin: 'ADMIN', profesor: 'PROFESOR', estudiante: 'ESTUDIANTE' };
+    const mapped = roleMap[String(rawRol).trim().toLowerCase()] ?? String(rawRol).trim().toUpperCase();
+    const rol = mapped as UserRole;
+    if (!allowed.includes(rol)) {
+      throw new ConflictException('Rol no valido. Use ESTUDIANTE, PROFESOR o ADMIN');
+    }
+
+    const payload = {
+      nombre: String(nombre).trim(),
+      email: createUserDto.email,
+      password: createUserDto.password,
+      rol,
+    };
+
     try {
-      const newUser = await this.usersService.create(createUserDto);
+      const newUser = await this.usersService.create(payload);
       const { password, ...result } = newUser;
       return {
         message: 'Usuario registrado exitosamente',
         user: result,
       };
     } catch (error: any) {
-      // Verificamos de forma segura si el error tiene la propiedad code de PostgreSQL
       if (error && error.code === '23505') {
-        throw new ConflictException('El correo electrónico ya se encuentra registrado.');
+        throw new ConflictException('El correo electronico ya se encuentra registrado.');
       }
-      
-      // Si es otro tipo de error, lo imprimimos en consola y lo lanzamos para no enmascararlo
-      console.error('❌ Error desconocido en registro:', error);
+      console.error('Error desconocido en registro:', error);
       throw error;
     }
   }

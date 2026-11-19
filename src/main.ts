@@ -7,7 +7,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: 'http://localhost:9000', // El puerto donde corre Quasar en desarrollo
+    origin: ['http://localhost:9000', 'http://localhost:9001'], // El puerto donde corre Quasar en desarrollo
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
